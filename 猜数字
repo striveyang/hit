@@ -1,0 +1,53 @@
+#include<stdio.h>
+# include<stdlib.h>
+# include<time.h>
+void menu()
+ { 
+    printf("*********************\n");
+    printf("欢迎进入该游戏系统!\n");
+    printf("选择：\n");
+    printf("1:start\n");
+    printf("2:exit\n");
+    printf("*********************\n");
+ 
+   }
+int game(int n)
+ 
+{  int i;
+     while(1)
+   {    printf("输入你猜的数字:");
+         scanf("%d",&i);
+       if(i<n)
+           printf("你猜小了;");
+        if(i>n)
+           printf("你猜大了;");
+        if(i==n)
+        {
+            printf("恭喜你，你猜对了!");
+            return 0;
+        }
+    //
+   }
+}
+int main()
+{ 
+   srand((unsigned int)time(NULL));
+   int ret=rand();
+   int m=ret%100;
+   int a;
+   menu();
+   printf("输入:");
+   scanf("%d",&a);
+  switch(a)
+    {
+     case 1: 
+         game(m);
+         break;
+     case 2:
+         printf("exit\n");
+         break;
+     }
+   
+return 0;
+ 
+}
