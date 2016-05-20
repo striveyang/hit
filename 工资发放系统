@@ -1,0 +1,497 @@
+#include<iostream> 
+#include<string> 
+//#include<fstream>
+using namespace std; 
+int  N=0; 
+int MONTH=1; 
+int  LING=0; 
+int  GX_gd_salary=3000; 
+int  XSG_sx=10; 
+double XSY_tch=0.05; 
+int DXSY_gd_salary=800; 
+class people 
+{ 
+	private: 
+		int  num; //员工编号
+		char  *name; //姓名
+		int year,month; //出生日期
+		int gz;// 工种 
+		int jiangli;// 奖励 
+	public: 
+		void in_peole(int n,char *na,int y,int m,int g)// 输入个人信息 
+		{ 
+			num=n; 
+			name=new char[strlen(na)+1]; 
+			strcpy(name,na); 
+			year=y; 
+			month=m; 
+			gz=g; 
+			if(m==MONTH)jiangli=200; 
+			else jiangli=0; 
+		} 
+		int get_num(){return num;} 
+		char get_name(){return *name;} 
+		int get_year(){return year;} 
+		int get_month(){ return month;} 
+		int get_gz(){ return gz;} 
+		void print(){cout<<num<<"  "<<name<<"  "<<year<<"  "<<month<<" "<<gz<<"  "<<jiangli<<"  ";} 
+
+
+		int get_jiangli(){ return jiangli;} 
+}; 
+
+
+
+class GX:virtual public people// 1  固定薪金的雇员
+{ 
+	private: 
+		int gd_salary;      // 固定工资 
+		int qj;             // 请假次数 
+		int yk_salary;      // 应扣工资 
+		int salary;         // 最后工资 
+	public: 
+		void chushihua()    // 初始化 
+		{ 
+			gd_salary=GX_gd_salary;    
+			qj=LING; 
+			yk_salary=LING;    
+			salary=gd_salary+get_jiangli()-yk_salary; 
+		} 
+		void qingjia()// 请假函数 
+		{ 
+			qj++; 
+			yk_salary=yk_salary+30; 
+			salary=salary-30; 
+		} 
+		int get_gd_salary(){ return gd_salary;} 
+		int get_qj(){ return qj ;} 
+		int get_yk_salary(){ return yk_salary;} 
+		int get_salary(){ return salary;} 
+		void print(){cout<<gd_salary<<"  "<<qj<<"  "<<yk_salary<<"  "<<salary<<"  ";//<<lq; 
+		}
+
+}; 
+
+
+
+
+class XSG:virtual public people//   2 小时工 
+{ 
+	private: 
+		int gz_time;   // 工作时长 
+
+		int sx;        // 时薪 
+		int jb_time;   // 加班时长 
+		int salary;    // 实发工资 
+	public: 
+		void chushihua()// 初始化 
+		{ 
+			gz_time=LING; 
+			sx=XSG_sx;
+			jb_time=LING; 
+			salary=LING+get_jiangli(); 
+		} 
+		void zh_time(int time)// 总时间 
+		{	 
+			if(time>160) 
+			{ 
+				gz_time=160; 
+				jb_time=time-160; 
+			} 
+			else gz_time=time; 
+			salary=time*sx; 
+		} 
+		int get_gz_time(){ return gz_time;} 
+		int get_sx(){ return sx;} 
+		int get_salary(){ return salary;} 
+		void print(){cout<<gz_time<<"  "<<sx<<"  "<<jb_time<<"  "<<salary<<"  ";
+		} 
+}; 
+
+
+
+
+class XSY:virtual public people//  3 销售员
+{ 
+	private: 
+		int xse;       // 销售额 
+		double tch;    // 提成比例 
+		int yk_salary; // 应扣工资 
+		int salary;    // 实发工资  
+	public: 
+		void chushihua()// 初始化 
+		{ 
+			xse=0; 
+			tch=XSY_tch; 
+
+			yk_salary=0;    
+			salary=(int)((double)xse*tch)-yk_salary+get_jiangli(); 
+		} 
+		void  xiaoshou(int e)// 销售函数 
+		{ 
+			xse=e; 
+			if(e<30000)yk_salary=e*2/1000; 
+			salary=(int)((double)xse*tch)-yk_salary; 
+			cout<<xse<<"  "<<tch<<"  "<<yk_salary<<"  "<<salary<<"  "; 
+		} 
+		int get_yk_salary(){ return yk_salary;} 
+		int get_xse(){ return xse;} 
+		double get_tch(){ return tch;}	 
+		int get_salary(){ return salary;} 
+		void print(){cout<<xse<<"  "<<tch<<"  "<<yk_salary<<"  "<<salary<<"  ";
+		} 
+}; 
+
+
+
+
+class DXSY:virtual public people//  4 带薪销售员
+{ 
+	private: 
+		int gd_salary;    // 固定工资 
+		int xse;          // 销售额 
+		double tch;		  // 提成比例 
+		int qj;			  // 请假次数 
+		int yk_salary;    // 应扣工资 
+		int salary;       // 实发工资 
+	public: 
+		void chushihua()// 初始化 
+		{ 
+			gd_salary=DXSY_gd_salary; 
+			xse=0; 
+			tch=XSY_tch; 
+			qj=0; 
+			yk_salary=0;    
+			salary=gd_salary+(int)((double)xse*tch)-yk_salary+get_jiangli(); 
+		} 
+		void qingjia()// 请假函数 
+		{ 
+			qj++; 
+
+			yk_salary=yk_salary+30; 
+		 	salary=salary-30; 
+		} 
+		void  xiaoshou(int e)// 销售函数 
+		{   
+			xse=e; 
+			if(e<30000)yk_salary=e*2/1000; 
+			salary=salary+(int)((double)xse*tch)-yk_salary; 
+		} 
+	 	int get_gd_salary(){ return gd_salary;} 
+		int get_xse(){ return xse;} 
+		double get_tch(){ return tch;} 
+		int get_qj(){ return qj ;} 
+		int get_yk_salary(){ return yk_salary;} 
+		int get_salary(){ return salary;} 
+		void print(){cout<<gd_salary<<"  "<<xse<<"  "<<tch<<"  "<<qj<<"  "<<yk_salary<<"  "<<salary<<"  ";
+		} 
+}; 
+
+
+
+
+
+class LQGZ:public GX,public XSG, public  XSY,public DXSY 
+{ 
+		private: 
+			int lq;// 是否领取 
+		public: 
+			void qingjia()// 请假函数 
+			{ 
+				if(get_gz()==1) GX::qingjia(); 
+				if(get_gz()==4) DXSY::qingjia(); 
+			} 
+			void  xiaoshou(int e)// 销售函数 
+			{ 
+				if(get_gz()==3) XSY::xiaoshou(e); 
+				if(get_gz()==4) DXSY::xiaoshou(e); 
+			} 
+			void print()// 输出函数 
+			{ 
+				people::print();				  
+				if(get_gz()==1) GX::print();
+
+				if(get_gz()==2) XSG::print(); 
+				if(get_gz()==3) XSY::print(); 
+				if(get_gz()==4) DXSY::print(); 
+				cout<<"  "<<lq<<"  "<<endl; 
+			} 
+			void lingqian(){lq=1;}// 工资发放 
+			void chushihua() 
+			{ 
+				GX::chushihua(); 
+				XSG::chushihua(); 
+				XSY::chushihua(); 
+				DXSY::chushihua(); 
+				lq=0; 
+			} 
+		//	void Recordinfo(int no,int bir,int gong,int jlxj,int gzsc,int shix,int jbsc,int sfgz,char nam,char sflq);
+}; 
+
+
+
+
+
+/*void LQGZ::Recordinfo(int no,int nian,int yue,int gong,int jlxj,int gzsc,int shix,int jbsc,int sfgz,char nam,char sflq)
+{   num=no;
+	name=nam;
+	year=nian;
+	month=yue;
+	gz=gong;
+	jlxj=jl;
+	gzsc=gz_time;
+	shix=sx;
+	jbsc=jb_time;
+	sfgz=salary;
+	sflq=lq;
+	ofstream file1("info1.txt",ios::app);
+	file1<<"编号:"<<no<<" 姓名:"<<nam<<" 出生年月:"<<nian<< yue<<"  工种:"<<gong<<" 奖励薪金:"<<jlxj<<" 工作时长:"<<gzsc
+		 <<" 时薪:"<<shix<<" 加班时长:"<<jbsc<<" 实发工资:"<<sfgz<<" 是否领取:"<<sflq<<endl;
+	file1.close();
+} 
+*/
+
+
+
+
+void menu()         // 主菜单 
+{   cout<<"                工资发放系统 "<<endl; 
+	cout<<"1 ． 初始化系统             2 ． 职工信息输出 "<<endl; 
+	cout<<"3 ． 添加职工               4 ． 删除职工 "<<endl; 
+	cout<<"5 ． 工资发放               6 ． 请假 "<<endl; 
+	cout<<"7 .  退出 "<<endl; 
+	cout<<" 请输入相应编号： "<<endl; 
+} 
+
+void main() 
+{ 
+	LQGZ *DX;        //对象*DX
+	DX=new LQGZ[10000]; 
+	for(;1;) 
+	{ 
+		menu(); //主菜单的输入
+		int i; 
+		cin>>i; 
+		switch(i) //分支
+		{ 
+		case 1:  //1 ． 初始化系统 
+			{ 
+			for(;1;) 
+			{ 
+				N++; 
+				char na[20];                  
+				int y, m, g,time,e; 
+				char c; 
+				cout<<" 请输入员工信息 "<<endl; 
+				cout<<" 编号 : "<<N<<endl;                 //自动编号
+				cout<<" 姓名 : "<<endl; 
+				cin>>na;									//姓名输入
+				cout<<" 出生年月，年 : "<<endl; 
+				cin>>y;
+				cout<<" 出生年月，月 : "<<endl; 
+				cin>>m;
+				cout<<" 工种 : "<<endl; 
+				cout<<"1. 固定薪金的雇员    2. 小时工     3. 销售员     4. 带薪销售员 "<<endl; 
+				cout<<" 请选择编号 "<<endl; 
+
+				cin>>g; 
+				DX[N-1].in_peole(N,na,y,m,g); 
+				DX[N-1].chushihua(); 
+				if(g==1) {} 
+				if(g==2) 
+				{ 
+					cout<<" 请输入这个月总的工作间 : "<<endl; 
+					cin>>time; 
+					DX[N-1].zh_time(time); 
+				} 
+				if(g==3) 
+				{ 
+					cout<<" 请输入这个月总的销售额 : "<<endl; 
+					cin>>e; 
+					DX[N-1].xiaoshou(e); 
+				}			 
+				if(g==4) 
+				{ 
+					cout<<" 请输入这个月总的销售额 : "<<endl; 
+					cin>>e; 
+					DX[N-1].xiaoshou(e); 
+			 	} 
+				cout<<" 是否继续输入   Y 确认   N 取消 "<<endl; 
+				cin>>c; 
+				if(c=='Y') 
+					{} 
+				else 
+					{break;} 
+				 
+			}};break; 
+		case 2: //2 ． 职工信息输出
+			{ 
+			 
+				cout<<"******************************** 固定薪金职员 *********************************"<<endl; 
+				cout<<" 编号    姓名   出生年月   工种   奖励薪金   固定月薪 请假天数 应扣 实发工资 是否领取 "<<endl; 
+				for(int a=0; a<=N; a++) 
+			{if(DX[a].get_gz()==1) DX[a].print();} 
+			 
+				cout<<"********************************** 计时职员 *********************************** "<<endl; 
+				cout<<" 编号    姓名   出生年月 工种   奖励薪金   工作时长   时
+薪 加班时长 实发工资 是否领取         "<<endl; 
+				for(int b=0;b<=N ; b++) 
+			{if(DX[b].get_gz()==2) DX[b].print();} 
+			 
+				cout<<"********************************** 普通销售员 *********************************** "<<endl; 
+				cout<<" 编号    姓名   出生年月 工种   奖励薪金 销售额   提成比例 应扣   实发工资   是否领取 "<<endl; 
+				for(int c=0;c<=N ; c++) 
+			{if(DX[c].get_gz()==3) DX[c].print();} 
+				cout<<"********************************* 带薪销售员 ************************************"<<endl; 
+				cout<<" 编号   姓名 出生年月 工种 奖励薪金 固定月薪 销售额 提成比例 请假天数 应扣   实发工资   是否领取 "<<endl; 
+				for(int d=0;d<=N ; d++) 
+			{if(DX[d].get_gz()==4) DX[d].print(); 
+			} 
+		};break; 
+		case 3: //3 ． 添加职工 
+			{ 
+			for(;1;) 
+			{ 
+				N++; 
+				char na[20]; 
+				int y, m, g,time,e; 
+				char c; 
+				cout<<" 请输入员工信息 "<<endl; 
+				cout<<" 编号 : "<<N<<endl; 
+				cout<<" 姓名 : "<<endl; 
+				cin>>na; 
+	 			cout<<" 出生年月，年 : "<<endl; 
+				cin>>y; 
+				cout<<" 出生年月，月 : "<<endl; 
+				cin>>m; 
+				cout<<" 工种 : "<<endl; 
+				cout<<"1. 固定薪金的雇员    2. 小时工     3. 销售员     4. 带薪销售员 "<<endl; 
+				cout<<" 请选择编号 "<<endl; 
+				cin>>g; 
+				DX[N-1].in_peole(N,na,y,m,g); 
+				DX[N-1].chushihua(); 
+				if(g==1) {} 
+				if(g==2) 
+				{ 
+
+					cout<<" 请输入这个月总的工作时间 : "<<endl; 
+					cin>>time; 
+					DX[N-1].zh_time(time); 
+				} 
+				if(g==3) 
+				{ 
+					cout<<" 请输入这个月总的销售额 : "<<endl; 
+					cin>>e; 
+					DX[N-1].xiaoshou(e); 
+				}			 
+				if(g==4) 
+				{ 
+					cout<<" 请输入这个月总的销售额 : "<<endl; 
+					cin>>e; 
+					DX[N-1].xiaoshou(e); 
+				} 
+				cout<<" 是否继续输入   Y 确认   N 取消 "<<endl; 
+				cin>>c; 
+				if(c=='Y') 
+					{} 
+				else 
+					{break;}		 
+			}};break;; 
+		case 4: // 4 ． 删除职工
+		{	int i,MM; 
+			char c; 
+			cout<<" 请输入职工编号 "<<endl; 
+			cin>>i; 
+			for(int a=0; a<=N; a++) 
+			{ 
+				if(DX[a].get_num()==i) 
+				{MM=a;break;} 
+			}			 
+			DX[MM].print();// 输出这个职工的信息 				 
+						cout<<"Y 确认   N 取消 "<<endl; 
+						cin>>c; 
+						if(c=='Y') 
+						{ 
+							for(; MM<=N; MM++) 
+							{DX[MM]=DX[MM+1];} 
+							cout<<" 删除成功 "<<endl;	 						 
+						} 
+						else 
+
+						{ 
+						} 
+		} 
+			;break; 
+		case 5:          //  5 ． 工资发放
+		{ 
+			 
+			int i ,IF=1; 
+			char c; 
+			cout<<" 请输入职工编号 "<<endl; 
+			for(; 1; ) 
+			{ 
+			cin>>i; 
+			for(int a=0; a<=N; a++) 
+			{ 
+				if(DX[a].get_num()==i) 
+					{ 
+						DX[a].print();// 输出这个职工的信息 				 
+						cout<<"Y 确认   N 取消 "<<endl; 
+						cin>>c; 
+						if(c=='Y') 
+						{ 
+							DX[a].lingqian(); 
+							DX[a].print(); 
+							IF=0; 
+							break; 
+						} 
+						else 
+						{ 
+						} 
+					} 
+				 
+			} 
+			if(IF)cout<<" 编号不存在，请重新输入 "<<endl; 
+			else{break;} 
+			} 
+		}break; 
+		 
+		 
+		case 6: //6 ． 请假 
+			 
+		{	 
+			int i ,IF=1; 
+
+			char c; 
+			cout<<" 请输入职工编号 "<<endl; 
+			for(; 1; ) 
+			{ 
+			cin>>i; 
+			for(int a=0; a<=N; a++) 
+			{ 
+				if(DX[a].get_num()==i) 
+				{ 
+					DX[a].print();// 输出这个职工的信息 
+					cout<<"Y 确认   N 取消 "<<endl; 
+					cin>>c; 
+					if(c=='Y') 
+					{ 
+						DX[a].qingjia(); 
+						DX[a].print(); 
+						IF=0; 
+						break; 
+					} 
+					else 
+					{} 
+				} 
+			if(IF)cout<<" 编号不存在，请重新输入 "<<endl; 
+			else{break;}} 
+			};break; 
+		} 
+		case 7:cout<<"成功退出系统！！！"<<endl;break; //7 .  退出
+		} 
+		if(i==7) break;
+		
+		} 
+	
+} 
