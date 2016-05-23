@@ -1,0 +1,339 @@
+#include<iostream>
+#include<string>
+#include<fstream>
+#include<iomanip> 
+using namespace std;
+class student                           
+{
+protected:                             
+	int  num;
+	char name[20];
+	char sex[6];
+	char Class[20];
+	char birth[20];
+	char tel[10];
+public:                             
+	student *next;                     
+	student(){ }                     
+	~student(){ }                       
+	char* getname(){ return name;}               
+	char* getClass(){ return Class;}
+	void input()
+	{
+		int i=1;
+		cout<<"\t\t\t按提示输入:"<<endl;
+		cout<<"\t\t输入学号: ";
+		cin>>num;
+		cout<<"\t\t输入姓名: ";
+		cin>>name;
+		do
+		{
+			cout<<"\t\t输入性别: ";
+			cin>>sex;
+			if(strcmp(sex,"男")==0 || strcmp(sex,"女")==0)
+			{
+				cout<<"\t\t输入出生日期: ";
+				cin>>birth;
+				cout<<"\t\t输入联系电话: ";
+				cin>>tel;
+				cout<<"\t\t输入班级: ";
+				cin>>Class;
+				i=0;
+			}
+			else
+			{
+				cout<<"\t\t\t无此类型性别!重新输入!"<<endl;
+				i=1;
+			}
+		}while(i);
+		return ;
+	}
+	void input(ifstream & is) 
+	{
+		is>>num>>name>>sex>>birth>>tel>>Class;
+		is.get(); 
+	}
+	void output()
+	{
+		cout<<" 学生基本信息如下:"<<endl;
+		cout<<" 学号:"<<" "
+		    <<" 姓名:"<<" "
+		    <<" 性别:"<<" "
+		    <<" 出生日期:"<<" "
+		    <<" 联系电话:"<<" "
+		    <<"    班级:"<<endl;
+		cout<<num<<"   \t"<<name<<"\t " <<sex<<"\t" <<birth<<"\t  "<<tel<<"\t\t "<<Class<<endl;
+	}
+	void output(ofstream & os)               
+	{
+		os<<setw(20)<<"学号："<<num
+			<<setw(20)<<"姓名："<<name
+			<<setw(20)<<"性别："<<sex
+			<<setw(20)<<"出生日期："<<birth
+			<<setw(20)<<"联系电话："<<tel
+			<<setw(20)<<"班级："<<Class<<endl;
+	}
+};
+class school                           
+{
+public:                               
+	school(){ head=new student; head->next=NULL; key=0; }
+	~school(){ delete head; }                  
+	void input();
+	void mend();
+	void del();
+	int find(student **p,char *pm=NULL,char *pn=NULL);
+	void found();
+	void show();
+	void save();
+	void begin();
+	void clear();
+	char mainmenu();
+	int getkey(){ return key;}
+	void setkey(int k){ key=k; }
+private:                             
+	student *head;                       
+	int key;
+};
+//录入函数
+void school::input()
+{
+	student *p,*p2=NULL;
+	p=head;                             
+	int n=1;
+	while(p->next)
+		p=p->next;
+	while(n)
+	{
+		p2=new student;
+		p2->input();
+		p->next=p2;
+		p2->next=NULL;
+		p=p->next;     
+		school::setkey(1);
+		cout<<"\t\t\t按1继续,按0返回 : ";
+		cin>>n;
+	}
+}
+//子查找函数
+int school::find(student **p1,char *pm,char *pn)
+{ student *p;  p=head;
+while(p->next)
+{
+	(*p1)=p;
+    if( !strcmp( (p->next)->getClass(),pm )||!strcmp( (p->next)->getname(),pn ) )
+		return 1;   p=p->next;
+}
+return 0;  }
+//查找函数
+void school::found()
+{
+	student *p;
+	int n=1;
+	char Class[20]={0};
+	char name[20]={0};
+	do
+	{
+		cout<<"\t\t1:按班级查找,2:按姓名查找，3:退出本菜单 ";
+		cin>>n;
+	}while(n<1||n>3);
+
+	if(n==1)
+	{
+		cout<<"\t\t\t输入班级: ";
+		cin>>Class;
+	}
+	else if(n==2)
+	{
+		cout<<"\t\t\t输入姓名: ";
+		cin>>name;
+	}
+	else if(n==3)
+	{
+		return;
+	}
+	if(!find(&p,Class,name) )
+	{
+		cout<<"\t\t找不到你要查找的内容!"<<endl;
+		return;
+	}
+	(p->next)->output();
+}
+//删除函数
+void school::del()
+{
+	student *p,*p2;
+	char Class[20]={0};
+	char name[20]={0};
+	cout<<"\t\t\t输入姓名: ";
+	cin>>name;
+	if( !find(&p,Class,name) )
+	{
+		cout<<"\t\t找不到你要删除的内容!"<<endl;
+		return;
+	}
+	(p->next)->output();
+	p2=p->next;
+	p->next=p2->next;
+	delete p2;
+	school::setkey(1);
+	cout<<endl;
+	cout<<"\t\t\t已删除"<<endl;
+}
+//显示函数
+void school::show()
+{
+	student *p;
+	p=head;
+	while(p->next)
+	{
+		(p->next)->output();
+		p=p->next;
+	}
+}
+//修改函数
+void school::mend()
+{
+	student *p;
+	int n=1;
+	char Class[20]={0};
+	char name[20]={0};
+	do
+	{
+		cout<<"\t\t1:按班级修改,2:按姓名修改: ";
+		cin>>n;
+	}while(n<1||n>2); //不符合要求的输入要重新输入
+
+	if(n==1)
+	{
+		cout<<"\t\t\t输入班级: "; //输入要修改的班级
+
+		cin>>Class;
+	}
+	if(n==2)
+	{
+		cout<<"\t\t\t输入姓名: "; //输入要修改的姓名
+		cin>>name;
+	}
+	if( !find(&p,Class,name) ) //结果未找到
+	{
+		cout<<"\t\t找不到你要修改的内容!"<<endl;
+		return;
+	}
+	(p->next)->output();//输出修改前的信息
+	(p->next)->input();//输入要修改的信息
+	school::setkey(1);
+}
+
+//保存函数
+void school::save()
+{
+	student *p;
+	p=head;
+	ofstream os("student.txt",ios::out);
+	if (school::getkey()==1)
+	{
+		while(p->next)
+		{
+			(p->next)->output(os);
+			p=p->next;
+		}
+	}
+	cout<<"\t\t\t\t文件已保存! "<<endl;
+	school::setkey(0);
+}
+//初始化函数
+void school::begin()
+{
+	student *p,*p2;
+	p=head;
+	clear();
+	long t;
+	ifstream is("student.txt",ios::in); 
+	if(!is)
+	{
+		ofstream os("student.txt",ios::out);
+		os.close();
+		return ;
+	}
+	int num=-1;
+	while(1)
+	{
+		num=-1;
+		t=is.tellg();
+		is>>num;
+		is.seekg(t);
+		if(num<0)
+		{   
+			is.close();
+			return;
+		}
+		p2=new student;
+		p2->input(is);
+		p->next=p2;
+		p2->next=NULL;
+		p=p->next;
+	}
+}
+//清空函数 
+void school::clear()
+{
+	student *p,*p2;
+	p=head->next;
+	while( p )
+	{
+		p2=p;
+		p=p->next;
+		delete p2;
+	}
+}
+
+//主选菜单函数
+char school::mainmenu()
+{
+	char n;
+	cout<<"\n\n                      欢迎进入学籍管理系统          "<<endl<<endl
+		<<"     * * * * * * * * * * * * * * * * * * * * * * * * * * * *"<<endl
+		<<"                        1:   录入学生信息                   "<<endl
+		<<"                        2:   显示学生信息                   "<<endl
+		<<"                        3:   查找学生信息                   "<<endl
+		<<"                        4:   删除学生信息                   "<<endl
+		<<"                        5:   修改学生信息                   "<<endl
+		<<"                        6:   保存学生信息                   "<<endl
+		<<"                        0:   退出系统                       "<<endl
+		<<"     * * * * * * * * * * * * * * * * * * * * * * * * * * * *"<<endl
+		<<"                            请选择:";
+	cin>>n;
+	return n;
+}
+//主函数
+void main()
+{
+	school pp;
+	int k=1;
+	char n;
+	pp.begin();
+	while(k==1)
+	{
+		n=pp.mainmenu();
+		switch(n)
+		{
+		case '1':pp.input(); break;
+		case '2':pp.show(); break;
+		case '3':pp.found(); break;
+		case '4':pp.del(); break;
+		case '5':pp.mend(); break;
+		case '6':pp.save(); break;
+		case '0':
+			if(pp.getkey()==1)
+			{
+				cout<<"\t\t\t是否保存? 1 : 保存 0:不保存 : ";
+				cin>>k;
+				if(k==1)
+					pp.save();
+			}
+			pp.clear();
+			k=0;
+			break; }
+	}
+}
