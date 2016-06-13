@@ -1,0 +1,683 @@
+//-----------Huffman.h
+#pragma once
+#define _CRT_SECURE_NO_WARNINGS 1
+#include<iostream>
+using namespace std;
+#include"Heap.h"
+#include<queue>
+template<class T>
+struct HuffmanNode
+{
+	HuffmanNode<T>* _left;
+	HuffmanNode<T>* _right;
+	T _weight;  //权值
+	HuffmanNode(const T& wight)
+		:_left(NULL)
+		, _right(NULL)
+		,_weight(wight)
+	{}
+};
+template<class T>
+class HuffmanTree
+{
+	typedef HuffmanNode<T> Node;
+public:
+	HuffmanTree()
+		:_root(NULL)
+	{}
+	~HuffmanTree()
+{
+	if (_root)
+	{
+		_Destroy(_root);
+	}
+}
+	HuffmanTree(const T*a, size_t size, const T&invalid)
+	{
+		_root = CreateTree(a, size, invalid);
+	}
+	Node* CreateTree(const T*a, size_t size, const T&invalid)
+	{
+		Heap<Node*, Less<Node*>> minHeap;
+		for (size_t i = 0; i < size; ++i)
+		{
+			if (a[i] != invalid)
+			{
+				Node* tmp = new Node(a[i]);
+				minHeap.Push(tmp);
+			}
+		}
+		while (!minHeap.empty())
+		{
+			Node* left = minHeap.Top();
+			minHeap.Pop();
+			Node* right = NULL;
+			if (!minHeap.empty())
+			{
+				right = minHeap.Top();
+				minHeap.Pop();
+			}
+			Node* parent = NULL;
+			if (right)
+			{
+				parent = new Node(left->_weight + right->_weight);
+			}
+			else
+			{
+				parent = new Node(left->_weight);
+			}
+			parent->_left = left;
+			parent->_right = right;
+			if (minHeap.empty())
+			{
+				return parent;
+			}
+			minHeap.Push(parent);
+		}
+		return NULL;
+	}
+	Node* GetRootNode()
+	{
+		return _root;
+	}
+	void LeveLorder()    //层序
+	{
+		queue<Node*> tmp;
+		if (_root == NULL)
+			return;
+		else
+		{
+			tmp.push(_root);
+			while (!tmp.empty())
+			{
+				Node* Front = tmp.front();
+				cout << Front->_data << " ";
+				tmp.pop();
+				if (Front->_left)
+				{
+					tmp.push(Front->_left);
+				}
+				if (Front->_right)
+				{
+					tmp.push(Front->_right);
+				}
+			}
+		}
+	}
+protected:
+	void _Destroy(Node* root)
+	{
+		if (root->_left == NULL && root->_right == NULL)
+		{
+			delete root;
+			root = NULL;
+		}
+		else
+		{
+			_Destroy(root->_left);
+			_Destroy(root->_right);
+		}
+	}
+
+protected:
+		Node* _root;
+};
+//------compress.h
+
+#include<iostream>
+#include"Huffman.h"
+using namespace std;
+typedef long LongType;
+struct CharInfo
+{
+	unsigned char _ch;//字符
+	LongType _count;//出现次数
+	string _code;//哈夫曼编码
+
+	CharInfo(const LongType count = 0)
+		:_count(count)
+	{}
+
+	CharInfo(const char ch)
+		:_ch(ch)
+	{}
+
+	bool operator!=(const CharInfo& c)const
+	{
+		return _count != c._count;
+	}
+
+	CharInfo operator+(const CharInfo& c)const
+	{
+		return CharInfo(_count + c._count);
+	}
+
+	bool operator<(const CharInfo& c)const
+	{
+		return _count < c._count;
+	}
+};
+
+class FileComparess
+{
+public:
+	//文件压缩
+	void Comparess(const char* filename)
+	{
+		FILE* fout = fopen(filename, "rb");
+		if (fout == NULL)
+		{
+			cout << "打开待压缩文件失败" << endl;
+			return;
+		}
+		for (int i = 0; i < 256; i++)
+		{
+			_info[i]._ch = i;
+		}
+		unsigned char ch = fgetc(fout); //不能使用有符号char，如果，压缩汉字时的字符出现范围是0~255
+		while (!feof(fout)) //检测流上的文件结束符，判断是否到文件结尾
+		{                   //如果文件结束，则返回非0值，否则返回0，文件结束符只能被clearerr()清除
+			
+			if (ch == '\r')
+			{
+				ch = fgetc(fout); //跳过
+				if (ch != '\n')
+				{
+					fseek(fout, -1, SEEK_CUR);//遇到‘\r\n’时屏幕上打印换行  //文件内部位置指针
+	//偏移起始位置：文件头0(SEEK_SET)，当前位置1(SEEK_CUR)，文件尾2(SEEK_END)）为基准，偏移offset（指针偏移量）个字节的位置
+				}
+			}
+			_info[ch]._count++;       //统计出现的次数
+			ch = fgetc(fout);
+		}
+		HuffmanTree<CharInfo> h(_info, 256, CharInfo());
+		HuffmanNode<CharInfo>* root = h.GetRootNode();
+		string str;
+		GenerateHaffmanCode(root, str);
+		//重新打开待压缩文件读
+		fseek(fout, 0, SEEK_SET);
+		ch = fgetc(fout);
+		unsigned char data = 0;   //要写入压缩文件的数据
+		int bitcount = 7;  //标记移位信息
+		//打开文件写压缩后的编码
+		string write(filename);
+		write = write + ".comparess";
+		FILE* fwrite = fopen(write.c_str(), "wb");
+		while (!feof(fout))
+		{
+			if (ch == '\r')
+			{
+				ch = fgetc(fout);
+				if (ch != '\n')
+				{
+					fseek(fout, -1, SEEK_CUR);
+				}
+			}
+			const char* cur = _info[ch]._code.c_str();
+			while (*cur)
+			{
+				if (bitcount >= 0)
+				{
+					data = data | ((*cur - '0') << bitcount);
+					bitcount--;
+				}
+				if (bitcount < 0)
+				{
+					fputc(data, fwrite);
+					bitcount = 7;
+					data = 0;
+				}
+				cur++;
+			}
+			ch = fgetc(fout);
+		}
+		fputc(data, fwrite);
+		//写配置文件
+		WriteConfig(filename);
+		fclose(fout);
+		fclose(fwrite);
+	}
+	//void Comparess(const char* file)
+	//{
+	//	//读取文件
+	//	FILE *fout = fopen(file, "rb");
+	//		if (fout == NULL)
+	//		{
+	//			cout << "打开待压缩文件失败" << endl;
+	//			return;
+	//		}
+	//
+	//			for (int i = 0; i < 256; i++)
+	//			{
+	//				_info[i]._ch = i;
+	//			}
+	//	assert(fout);
+	//	//统计每个字符出现的次数
+	//		unsigned char ch = fgetc(fout); //不能使用有符号char，如果，压缩汉字时的字符出现范围是0~255
+	//		while (!feof(fout)) //检测流上的文件结束符，判断是否到文件结尾
+	//		{                   //如果文件结束，则返回非0值，否则返回0，文件结束符只能被clearerr()清除
+	//			
+	//			if (ch == '\r')
+	//			{
+	//				ch = fgetc(fout); //跳过
+	//				if (ch != '\n')
+	//				{
+	//					fseek(fout, -1, SEEK_CUR);//遇到‘\r\n’时屏幕上打印换行
+	//	//偏移起始位置：文件头0(SEEK_SET)，当前位置1(SEEK_CUR)，文件尾2(SEEK_END)）为基准，偏移offset（指针偏移量）个字节的位置
+	//				}
+	//			}
+	//			_info[ch]._count++;
+	//			ch = fgetc(fout);
+	//		}
+	//			HuffmanTree<CharInfo> h(_info, 256, CharInfo());
+	//			HuffmanNode<CharInfo>* root = h.GetRootNode();
+	//			string str;
+	//			GenerateHaffmanCode(root, str);
+	//			//重新打开待压缩文件读
+	//			fseek(fout, 0, SEEK_SET);
+	//			ch = fgetc(fout);
+	//			unsigned char data = 0;   //要写入压缩文件的数据
+	//			int bitcount = 7;  //标记移位信息
+	//			//打开文件写压缩后的编码
+	//			string write(file);
+	//			write = write + ".comparess";
+	//			FILE* fwrite = fopen(write.c_str(), "wb");
+	//			assert(fwrite);
+	//			unsigned char value = 0;
+	//			size_t index = 0;//标记当前位
+	//			while (!feof(fout))
+	//			{
+	//				if (ch == '\r')
+	//				{
+	//					ch = fgetc(fout);
+	//					if (ch != '\n')
+	//					{
+	//						fseek(fout, -1, SEEK_CUR);
+	//					}
+	//				}
+	//				const char* cur = _info[ch]._code.c_str();
+	//				
+	//					string code = _info[ch]._code;
+	//					for (size_t i = 0; i < code.size(); i++)
+	//					{
+	//						if (code[i] == '1')
+	//						{
+	//							value <<= 1;
+	//							value |= 1;
+	//						}
+	//						else
+	//						{
+	//							value <<= 1;
+	//						}
+	//						//满8个字节，将其写入到压缩文件中
+	//						if (++index == 8)
+	//						{
+	//							fputc(value, fwrite);
+	//							value = 0;
+	//							index = 0;
+	//						}
+	//					}
+	//					ch = fgetc(fout);
+	//				}
+	//			}
+	//	//如果写入完，value 没有写满8位，把剩余的压入压缩文件中
+	//	if (index != 0)
+	//	{
+	//		value <<= (8 - index);
+	//		fputc(value, fwrite);
+	//	}
+	//	//配置文件
+	//		fputc(data, fwrite);
+	//		//写配置文件
+	//		WriteConfig(file);
+	//		fclose(fout);
+	//		fclose(fwrite);
+	//	fclose(fout);
+	//	fclose(fwrite);
+
+	//}
+
+	//文件解压缩
+	void UnComparess(const char* filename)
+	{
+		CharInfo arry[256];
+		//读配置文件
+		ReadConfig(filename, arry);
+		//重建Haffman树
+		HuffmanTree<CharInfo> h(arry, 256, CharInfo());
+		//遍历树，找叶子结点，写输出文件
+		HuffmanNode<CharInfo>* root = h.GetRootNode();
+		HuffmanNode<CharInfo>* cur = root;
+		//打开压缩文件读
+		string Curf(filename);
+		Curf = Curf + ".comparess";
+		FILE* fread = fopen(Curf.c_str(), "rb");
+		unsigned char ch = fgetc(fread);
+		FILE* fwrite = fopen("uncompress", "wb");
+		int readcount = root->_weight._count;//根节点的_count值就是整棵树字符出现的次数//出现次数越多越靠近根节点，编码越短。
+		while (readcount)
+		{
+			int tmp = 1;
+			int bit = 7;   //左移的位数
+			while (bit >= 0)
+			{
+				if (ch & (tmp << bit))   //判断最低位是0还是1  从而决定是left还是right
+				{
+					cur = cur->_right;
+					bit--;
+				}
+				else
+				{
+					cur = cur->_left;
+					bit--;
+				}
+				//找到叶子结点
+				if (cur->_left == NULL&&cur->_right == NULL)
+				{
+					fputc(cur->_weight._ch, fwrite);
+					cur = root;
+					readcount--;
+					//最后一个字符的编码在最后两个字节当中的情况
+					if (!readcount)  //
+					{
+						break;
+					}
+				}
+			}
+			ch = fgetc(fread);
+		}
+		fclose(fread);
+		fclose(fwrite);
+	}
+protected:
+	//得到Haffman编码
+	void GenerateHaffmanCode(HuffmanNode<CharInfo>* root, string& code)
+	{
+		if (root == NULL)
+			return;
+		GenerateHaffmanCode(root->_left, code + '0');
+		GenerateHaffmanCode(root->_right, code + '1');
+		root->_weight._code = code;
+		if (root->_left == NULL&&root->_right == NULL)
+		{
+			_info[root->_weight._ch]._code = code;
+		}
+
+	}
+	void WriteConfig(const char* filename)
+	{
+		string conf(filename);
+		conf = conf + "config";
+		FILE* fcon = fopen(conf.c_str(), "wb");
+		for (int i = 0; i < 256; ++i)
+		{
+
+			if (_info[i]._count)
+			{
+				fputc(_info[i]._ch, fcon);
+				fputc(',', fcon);
+				char count[100];
+				_itoa(_info[i]._count, count, 10);
+				fputs(count, fcon);
+				fputc(',', fcon);
+				fputs(_info[i]._code.c_str(), fcon);
+				fputc('\n', fcon);
+			}
+		}
+		fclose(fcon);
+	}
+	void ReadConfig(const char* filename, CharInfo* HNarry)
+	{
+		string conf(filename);
+		conf = conf + "config";
+		FILE* fread = fopen(conf.c_str(), "rb");
+		if (fread == NULL)
+		{
+			cout << "打开待压缩文件失败" << endl;
+			return;
+		}
+		char str[100];
+		while (fgets(str, 100, fread))//得到配置文件的一行
+		{
+			char* ptr = str;
+			unsigned char index = (unsigned char)*ptr;
+			if (index == '\n')
+			{
+				HNarry[index]._ch = index;
+				fgets(str, 100, fread);
+				char* ptr = str;
+				ptr++;
+				LongType count = 0;//字符出现的次数
+				while (*ptr != ',' && *ptr)//字符转换成数据
+				{
+					count *= 10;
+					count += (*ptr - '0');
+					ptr++;
+				}
+				HNarry[index]._count = count;
+				ptr++;
+				string code(ptr);
+				HNarry[index]._code = code;
+			}
+			else
+			{
+				HNarry[index]._ch = index;
+				ptr += 2;
+				LongType count = 0;
+				while (*ptr != ',' && *ptr)
+				{
+					count *= 10;
+					count += (*ptr - '0');
+					ptr++;
+				}
+				HNarry[index]._count = count;
+				ptr++;
+				string code(ptr);
+				HNarry[index]._code = code;
+			}
+		}
+	}
+protected:
+	CharInfo _info[256];
+};
+//......Heap.h
+#pragma once
+#define _CRT_SECURE_NO_WARNINGS 1
+#include<iostream>
+#include<vector>
+#include<assert.h>
+using namespace std;
+template<class T>
+struct Less
+{
+	bool operator()(const T& l, const T& r)
+	{
+		return l < r;
+	}
+};
+
+template<class T>
+struct Big
+{
+	bool operator()(const T& l, const T& r)
+	{
+		return l > r;
+	}
+};
+
+template<class T>
+struct Less<T*>
+{
+	bool operator()(const T*Nodel, const T*Noder)
+	{
+		return Nodel->_wight < Noder->_wight;
+	}
+};
+
+template<class T, class Compare = Less<T>>//默认为小堆
+class Heap
+{
+
+public:
+	Heap()
+	{}
+	Heap(vector<T> a)
+	{
+		_a.swap(a);
+
+		// 建堆
+		for (int i = (_a.size() - 2) / 2; i >= 0; --i)
+		{
+			_AdjustDown(i);
+		}
+	}
+	Heap(const T* a, size_t size, const T& invalid)
+	{
+		_a.reserve(size);
+
+		for (size_t i = 0; i < size; ++i)
+		{
+			if (a[i] != invalid)
+			{
+				_a.push_back(a[i]);
+			}
+		}
+
+		//建堆
+		for (int i = (_a.size() - 2) / 2; i >= 0; i--)
+			//从第一个非叶子结点开始下调，叶子结点可以看作是一个大堆或小堆
+		{
+
+			_AdjustDown(i);
+		}
+	}
+	Heap(T* a, size_t size)
+	{
+		_a.reserve(size);
+		for (size_t i = 0; i < size; ++i)
+		{
+			_a.push_back(a[i]);
+		}
+		//建堆
+
+		for (int i = (_a.size() - 2) / 2; i >= 0; --i)
+		{
+			_AdjustDown(i);
+		}
+		//Disp(_a, size);
+	}
+	void Pop()
+	{
+		size_t _size = _a.size();
+		assert(_size > 0);
+		swap(_a[0], _a[_size - 1]);
+		_a.pop_back();
+		_size = _a.size();
+		_AdjustDown(0);
+		//Disp(_a, _size);
+	}
+	void Push(const T& x)
+	{
+		_a.push_back(x);
+		size_t _size = _a.size();
+		_AdjustUp(_size - 1);
+		//Disp(_a, _size);
+	}
+	T& Top()
+	{
+		assert(!_a.empty());
+		return _a[0];
+	}
+	bool empty()
+	{
+		return _a.size() == 0;
+	}
+	size_t Size()
+	{
+		return _a.size();
+	}
+protected:
+	vector<T> _a;
+protected:
+	//找最后一个非叶子结点
+	//如果当前结点的孩子结点左孩子大于右孩子，就让child指向最大孩子结点（在此必须满足存在右孩子）
+	//如果当前结点小于孩子结点，就交换，下调，将孩子给父亲，孩子结点下移
+	//不满足  就break；
+	void _AdjustDown(size_t parent)    //大堆     下调
+	{
+		size_t child = parent * 2 + 1;
+		while (child < _a.size())
+		{
+			//compare<T> _com;
+			if (child + 1 < _a.size() && (_a[child + 1]<_a[child]))
+			{
+				++child;
+			}
+			if ((_a[child]< _a[parent]))
+			{
+				swap(_a[child], _a[parent]);
+				parent = child;
+				child = parent * 2 + 1;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+	//上调，传当前结点，令当前节点为孩子结点，上一结点为父结点，
+	//在这里不用考虑左右结点谁大谁小
+	//如果孩子结点大于父亲结点，交换，上移
+	//不满足  就break；
+	void _AdjustUp(size_t child)   //上调
+	{
+		//compare<T> _com;
+		size_t parent = (child - 1) / 2;
+		while (child > 0)
+		{
+			if ((_a[child]<_a[parent]))
+			{
+				swap(_a[child], _a[parent]);
+				child = parent;
+				parent = (child - 1) / 2;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+};
+
+//----test.cpp
+#include"compress.h"
+#include"Huffman.h"
+#include<time.h>
+#include <iostream>
+using namespace std;
+void Test()
+{
+	double t1;
+	double t2;
+	FileComparess f;
+	//f.Compress("input.txt");
+	f.Comparess("file.txt");
+	t1 = clock();//计时函数
+	printf("压缩文件需要的时间: %f s \n", t1 / CLOCKS_PER_SEC); //它用来表示一秒钟会有多少个时钟计时单元
+	cout << endl;                                                 //clock()/CLOCKS_PER_SEC来计算一个进程自身的运行时间
+	//f.UnCompress("input.txt");
+	f.UnComparess("file.txt");
+	t2 = clock();
+	printf("解压缩文件需要的时间: %f s \n", t2 / CLOCKS_PER_SEC);
+}
+int main()
+{
+	Test();
+	system("pause");
+	return 0;
+}
+
+
+
+
+
